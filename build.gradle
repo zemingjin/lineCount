@@ -34,7 +34,7 @@ test {
 }
 jar {
     manifest {
-        attributes 'Main-Class': 'org.solitaire.SolitaireApp'
+        attributes 'Main-Class': 'org.mjtools.linecount.LineCount'
     }
     from {
         duplicatesStrategy = 'EXCLUDE'

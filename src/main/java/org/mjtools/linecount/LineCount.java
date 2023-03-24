@@ -17,6 +17,7 @@ public class LineCount implements Runnable {
     protected static final String MISSING_PATH = "Missing required path to perform line-count.";
     protected static final String DEF_EXT = "java";
     protected static final String VERBOSE = "-verbose";
+    protected static final String PATH_SEPARATOR = ":";
 
     private String path;
     private String fileExt;
@@ -25,19 +26,32 @@ public class LineCount implements Runnable {
     private int lineCount = 0;
 
     public LineCount(String[] args) {
-        path(args[0]);
+        path(updatePath(args[0]));
         fileExt(checkArgs(args, "-ext", DEF_EXT));
-
         verbose(nonNull(checkArgs(args, VERBOSE, null)));
     }
 
     @Override
     public void run() {
-        run(path());
+        Stream.of(path().split(PATH_SEPARATOR)).forEach(this::run);
         System.out.printf("Total # of lines: %d\n", lineCount());
         if (verbose()) {
-            counts().forEach(it -> System.out.printf("%s: %d\n", it.getLeft(), it.getRight()));
+            summaries().forEach(it -> System.out.printf("%s: %d\n", it.getLeft(), it.getRight()));
         }
+    }
+
+    private List<Pair<String, Integer>> summaries() {
+        return Stream.of(path().split(PATH_SEPARATOR))
+                .map(this::getTotal)
+                .toList();
+    }
+
+    Pair<String, Integer> getTotal(String pathBase) {
+        return Pair.of(pathBase,
+                counts().stream()
+                        .filter(it -> it.getLeft().contains(pathBase))
+                        .mapToInt(Pair::getRight)
+                        .sum());
     }
 
     private void run(String path) {
@@ -57,6 +71,9 @@ public class LineCount implements Runnable {
     }
 
     protected int countLines(File file) {
+        if (verbose()) {
+            System.out.printf("Count lines for %s...\n", file.getPath());
+        }
         try (var fileReader = new FileReader(file)) {
             return (int) new BufferedReader(fileReader).lines()
                     .filter(it -> !it.isEmpty())
@@ -73,6 +90,10 @@ public class LineCount implements Runnable {
                 .map(it -> it.startsWith("=") ? it.substring(1) : it)
                 .findFirst()
                 .orElse(def);
+    }
+
+    private String updatePath(String path) {
+        return path.replace(";", PATH_SEPARATOR).replace("/", File.separator);
     }
 
     public static void main(String[] args) {
