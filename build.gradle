@@ -1,0 +1,55 @@
+buildscript {
+    ext.lombok_version='1.18.26'
+    ext.junit_jupiter_version='5.9.2'
+    ext.mockito_version='4.11.0'
+}
+
+plugins {
+    id 'java'
+    id 'info.solidsoft.pitest' version '1.9.11'
+}
+
+group 'org.mjtools.linecount'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly "org.projectlombok:lombok:${lombok_version}"
+    annotationProcessor "org.projectlombok:lombok:${lombok_version}"
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    implementation 'org.slf4j:slf4j-simple:2.0.6'
+
+    testRuntimeOnly 'org.pitest:pitest:1.11.0'
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${junit_jupiter_version}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junit_jupiter_version}"
+    testImplementation "org.mockito:mockito-core:${mockito_version}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockito_version}"
+}
+
+test {
+    useJUnitPlatform()
+}
+jar {
+    manifest {
+        attributes 'Main-Class': 'org.solitaire.SolitaireApp'
+    }
+    from {
+        duplicatesStrategy = 'EXCLUDE'
+        configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+pitest {
+    jvmArgs = ['-Xmx1024m']
+    useClasspathFile = true     //useful with bigger projects on Windows
+    fileExtensionsToFilter.addAll('xml', 'orbit')
+    targetClasses = ['org.solitaire.*']
+    threads = 4
+    outputFormats = ['HTML']
+    enableDefaultIncrementalAnalysis = true
+    timestampedReports = false
+    //adds dependency to org.pitest:pitest-junit5-plugin and sets "testPlugin" to "junit5"
+    junit5PluginVersion = '1.1.1'
+}
